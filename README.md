@@ -74,7 +74,7 @@ ExplorerBgTool/
 ### Step 1 — Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ExplorerBgTool.git
+git clone https://github.com/SuryaMajumder/ExplorerBgTool.git
 ```
 
 Or click **Code → Download ZIP** on GitHub and extract it anywhere (Desktop, C drive, wherever).
@@ -139,7 +139,7 @@ The **Live Preview** box updates instantly — what you see there is exactly wha
 | **🌫️ Blur / Haze** | Adds a frosted-glass dreamy haze | `3–8px` for a subtle glow effect |
 | **💧 Opacity** | How see-through the image is | `80–180` balances beauty and readability |
 
-> 💡 Watch the Live Preview as you drag — it updates after you release the slider.
+> 💡 Watch the Live Preview as you drag — it updates after you release the slider. (P.S.: Dark Mode of Windows gives better vibe with it than Light mode.)
 
 ---
 
@@ -155,7 +155,7 @@ The **Live Preview** box updates instantly — what you see there is exactly wha
 | ⤢ Stretch | Stretches to fill the window | May distort the image |
 | **⊞ Zoom & Fill** | **Scales to always fill — no cutoff** | **Use this! Best for photos & artwork** |
 
-> ✅ **Recommendation: always use Zoom & Fill.** It makes the image resize perfectly with your Explorer window no matter how you drag or snap it.
+> ✅ **Recommendation: always use Zoom & Fill.** It makes the image resize perfectly with your Explorer window no matter how you drag or snap it. Unless using anime figures which stays at fixed positions.
 
 ---
 
@@ -175,6 +175,8 @@ Under **EXPLORERTOOL DLL**, click **Browse** and select `ExplorerBgTool.dll` fro
    - This briefly closes and reopens Explorer (all windows will flash — that's normal)
 
 Open File Explorer and enjoy your background! 🎉
+
+> 💡 Note background doesn't appear at Home and Gallery of File Explorer. You can browse to any other location and your background will appear.
 
 ---
 
