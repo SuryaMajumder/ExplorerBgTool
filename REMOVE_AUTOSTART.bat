@@ -1,0 +1,1 @@
+powershell -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command schtasks /delete /tn ExplorerBgTool /f; Write-Host Auto-start removed! -ForegroundColor Green; pause' -Verb RunAs"
