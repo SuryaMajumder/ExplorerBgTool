@@ -14,12 +14,12 @@ Built with Python + a browser-based UI. Works on **Windows 10 and Windows 11**.
 ┌─────────────────────────────────────────────────────────┐
 │  > This PC                          🔍 Search This PC   │
 ├─────────────────┬───────────────────────────────────────┤
-│ 🏠 Home         │                                        │
-│ 🖼️  Gallery     │   [ Your beautiful image fills here ]  │
-│                 │                              🎨        │
-│ 📁 Desktop      │      🌸 anime / artwork / photo        │
-│ 📁 Documents    │                           [chibi!]     │
-│ 📁 Downloads    │                                        │
+│ 🏠 Home         │                                       │
+│ 🖼️  Gallery     │   [ Your beautiful image fills here ] │
+│                 │                              🎨       │
+│ 📁 Desktop      │      🌸 anime / artwork / photo       │
+│ 📁 Documents    │                           [logos!]    │
+│ 📁 Downloads    │                                       │
 └─────────────────┴───────────────────────────────────────┘
 ```
 
