@@ -105,7 +105,7 @@ The browser control panel looks like this:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  🖼️  Explorer Background Tool                         ✓ Administrator    │
+│  🖼️  Explorer Background Tool                         ✓ Administrator   │
 ├───────────────────────────────────────┬──────────────────────────────────┤
 │                                       │  BACKGROUND POSITION             │
 │   [ Live Preview — all layers ]       │  ↖ TL  ↑ Top  ↗ TR              │
@@ -116,19 +116,19 @@ The browser control panel looks like this:
 ├───────────────────────────────────────┤  EXPLORERTOOL DLL                │
 │  🌄 BACKGROUND LAYER                  │  [ ExplorerBgTool.dll ] [Browse] │
 │  [ image.jpg ] [Browse][🖥️ Wallpaper] ├──────────────────────────────────┤
-│               [🗑 Clear]              │  ACTIONS                         │
-│  ✨ Brightness  ───●─────  1.0×       │  ✅  Apply to Explorer            │
-│  🌫️ Blur/Haze   ●─────────  0px       │  🔄  Restart Explorer             │
-│  💧 Opacity     ──────●──  255        │  ❌  Uninstall Background         │
+│               [🗑 Clear]               │  ACTIONS                         │
+│  ✨ Brightness  ───●─────  1.0×       │  ✅  Apply to Explorer          │
+│  🌫️ Blur/Haze   ●─────────  0px       │  🔄  Restart Explorer           │
+│  💧 Opacity     ──────●──  255        │  ❌  Uninstall Background       │
 ├───────────────────────────────────────┴──────────────────────────────────┤
 │  🎨 FOREGROUND OVERLAYS  (optional — add as many as you want)            │
 │  ┌─────────────────────────────────────────────────────────────────────┐ │
 │  │ 🎨 Overlay 1   [ chibi.png ]  [Browse]  [✕]                        │ │
-│  │ Position: ↖TL  ↑Top  ↗TR  ←Left  ⊙Ctr  →Right  ↙BL  ↓Bot  ↘BR   │ │
+│  │ Position: ↖TL  ↑Top  ↗TR  ←Left  ⊙Ctr  →Right  ↙BL  ↓Bot  ↘BR     │ │
 │  │ 📐 Size  ──●──────  30%    ✨ Brightness  ──●──  1.0×              │ │
 │  │ 🌫️ Blur  ●────────   0px   💧 Opacity     ──────●──  255           │ │
 │  └─────────────────────────────────────────────────────────────────────┘ │
-│  [ + Add Foreground Image ]                                               │
+│  [ + Add Foreground Image ]                                              │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -162,7 +162,7 @@ You have three options for the background:
 | **🌫️ Blur / Haze** | Adds a frosted-glass dreamy haze | `3–8px` for a subtle glow effect |
 | **💧 Opacity** | How see-through the image is | `80–180` balances beauty and readability |
 
-> 💡 Watch the Live Preview as you drag — it updates after you release the slider. (P.S.: Dark Mode of Windows gives better vibe with it than Light mode.)
+> 💡 Watch the Live Preview as you drag — it updates after you release the slider. (P.S.: Dark Mode of Windows gives better vibe with darker backgrounds than Light mode and vice-versa.)
 
 ---
 
