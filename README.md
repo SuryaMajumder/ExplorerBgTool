@@ -1,6 +1,6 @@
 # 🖼️ Explorer Background Tool
 
-Set a **custom background image** in Windows File Explorer — with live preview, brightness, blur, opacity controls, and auto-start on boot.
+Set a **custom background image** in Windows File Explorer — with live preview, brightness, blur, opacity controls, foreground overlays, desktop wallpaper sync, and auto-start on boot.
 
 Built with Python + a browser-based UI. Works on **Windows 10 and Windows 11**.
 
@@ -16,9 +16,9 @@ Built with Python + a browser-based UI. Works on **Windows 10 and Windows 11**.
 ├─────────────────┬───────────────────────────────────────┤
 │ 🏠 Home         │                                        │
 │ 🖼️  Gallery     │   [ Your beautiful image fills here ]  │
-│                 │                                        │
+│                 │                              🎨        │
 │ 📁 Desktop      │      🌸 anime / artwork / photo        │
-│ 📁 Documents    │                                        │
+│ 📁 Documents    │                           [chibi!]     │
 │ 📁 Downloads    │                                        │
 └─────────────────┴───────────────────────────────────────┘
 ```
@@ -47,6 +47,7 @@ Built with Python + a browser-based UI. Works on **Windows 10 and Windows 11**.
 ExplorerBgTool/
 │
 ├── 📄 explorer_bg_tool.py      ← The main app (Python)
+├── 📄 wallpaper_watcher.py     ← Standalone wallpaper sync watcher
 ├── 📄 ExplorerBgTool.dll       ← The DLL that hooks into Explorer
 │
 ├── 🖱️ start.bat                ← START HERE — launches the control panel
@@ -62,9 +63,15 @@ ExplorerBgTool/
 ExplorerBgTool/
 │
 ├── 📄 bg_config.json           ← Your saved settings (auto-created)
+├── 📄 config.ini               ← explorerTool config (auto-created on Apply)
 ├── 📄 launch_bg_silent.vbs     ← Silent boot launcher (auto-created by SETUP_AUTOSTART)
-└── 📁 image/
-    └── 🖼️ bg_custom.png        ← Your processed background (auto-created)
+│
+├── 📁 image/
+│   └── 🖼️ bg_custom.png        ← Your processed & composited background (auto-created)
+│
+└── 📁 .wallpaper_cache/
+    ├── 🖼️ current_wallpaper.jpg ← Desktop wallpaper copy (if wallpaper mode used)
+    └── 📄 watcher.log          ← Wallpaper watcher activity log
 ```
 
 ---
@@ -97,37 +104,53 @@ start.bat
 The browser control panel looks like this:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  🖼️  Explorer Background Tool                    ✓ Administrator    │
-├──────────────────────────────────┬──────────────────────────────────┤
-│                                  │  IMAGE POSITION                  │
-│  [ Live Preview of your image ]  │  ↖ Top Left   ↗ Top Right       │
-│                                  │  ↙ Bot Left   ↘ Bot Right       │
-│   Updates in real time as you    │  ⊙ Center     ⤢ Stretch         │
-│   move the sliders below!        │  ⊞ Zoom & Fill  ← recommended!  │
-│                                  ├──────────────────────────────────┤
-├──────────────────────────────────┤  EXPLORERTOOL DLL               │
-│  IMAGE                           │  [ ExplorerBgTool.dll ] [Browse] │
-│  [ your-image.jpg ]  [ Browse ]  ├──────────────────────────────────┤
-│                                  │  ACTIONS                         │
-│  ADJUSTMENTS                     │                                  │
-│  ✨ Brightness  ───●─────  1.0×  │  ✅  Apply to Explorer           │
-│  🌫️ Blur/Haze   ●─────────  0px  │  🔄  Restart Explorer            │
-│  💧 Opacity     ──────●──   81   │  ❌  Uninstall Background        │
-└──────────────────────────────────┴──────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  🖼️  Explorer Background Tool                         ✓ Administrator    │
+├───────────────────────────────────────┬──────────────────────────────────┤
+│                                       │  BACKGROUND POSITION             │
+│   [ Live Preview — all layers ]       │  ↖ TL  ↑ Top  ↗ TR              │
+│                                       │  ← Left ⊙ Ctr → Right           │
+│   Background + overlays composited    │  ↙ BL  ↓ Bot  ↘ BR              │
+│   in real time!                       │  ⊞ Zoom & Fill  ← recommended!  │
+│                                       ├──────────────────────────────────┤
+├───────────────────────────────────────┤  EXPLORERTOOL DLL                │
+│  🌄 BACKGROUND LAYER                  │  [ ExplorerBgTool.dll ] [Browse] │
+│  [ image.jpg ] [Browse][🖥️ Wallpaper] ├──────────────────────────────────┤
+│               [🗑 Clear]              │  ACTIONS                         │
+│  ✨ Brightness  ───●─────  1.0×       │  ✅  Apply to Explorer            │
+│  🌫️ Blur/Haze   ●─────────  0px       │  🔄  Restart Explorer             │
+│  💧 Opacity     ──────●──  255        │  ❌  Uninstall Background         │
+├───────────────────────────────────────┴──────────────────────────────────┤
+│  🎨 FOREGROUND OVERLAYS  (optional — add as many as you want)            │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │ 🎨 Overlay 1   [ chibi.png ]  [Browse]  [✕]                        │ │
+│  │ Position: ↖TL  ↑Top  ↗TR  ←Left  ⊙Ctr  →Right  ↙BL  ↓Bot  ↘BR   │ │
+│  │ 📐 Size  ──●──────  30%    ✨ Brightness  ──●──  1.0×              │ │
+│  │ 🌫️ Blur  ●────────   0px   💧 Opacity     ──────●──  255           │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│  [ + Add Foreground Image ]                                               │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Step 3 — Pick your image
+### Step 3 — Pick your background image
 
-Click **Browse** under the **IMAGE** section and select any image file:
+Click **Browse** under the **🌄 BACKGROUND LAYER** section and select any image file:
 
 | Supported formats |
 |---|
 | `.png` `.jpg` `.jpeg` `.webp` `.bmp` |
 
 The **Live Preview** box updates instantly — what you see there is exactly what Explorer will show.
+
+You have three options for the background:
+
+| Button | What it does |
+|---|---|
+| **Browse** | Pick any image from your PC |
+| **🖥️ Wallpaper** | Use your current desktop wallpaper (auto-syncs if Spotlight!) |
+| **🗑 Clear** | Remove the background image (overlays remain untouched) |
 
 ---
 
@@ -143,7 +166,7 @@ The **Live Preview** box updates instantly — what you see there is exactly wha
 
 ---
 
-### Step 5 — Choose image position
+### Step 5 — Choose background position
 
 | Option | What it does | When to use it |
 |---|---|---|
@@ -159,7 +182,51 @@ The **Live Preview** box updates instantly — what you see there is exactly wha
 
 ---
 
-### Step 6 — Point to the DLL
+### Step 6 — (Optional) Add foreground overlays 🎨
+
+This is where it gets fun! You can pin **any number of images** on top of your background — like anime chibis, stickers, logos, or artwork — each independently positioned and styled.
+
+Click **`+ Add Foreground Image`** at the bottom of the page. Each overlay gets its own card:
+
+```
+┌────────────────────────────────────────────────────────┐
+│ 🎨 Overlay 1   [ chibi.png ]  [Browse]  [✕ Remove]    │
+│                                                        │
+│ POSITION  (pick where it's pinned)                     │
+│  ↖ TL    ↑ Top   ↗ TR                                 │
+│  ← Left  ⊙ Ctr  → Right                               │
+│  ↙ BL    ↓ Bot   ↘ BR  ← (default)                    │
+│                                                        │
+│ 📐 Size        ──●──────  30%   (% of screen height)  │
+│ ✨ Brightness  ──●──────  1.0×                         │
+│ 🌫️ Blur        ●────────   0px                         │
+│ 💧 Opacity     ──────────  255                         │
+└────────────────────────────────────────────────────────┘
+```
+
+**What each overlay control does:**
+
+| Control | What it does | Tips |
+|---|---|---|
+| **Browse** | Pick the overlay image | PNG with transparent background works best! |
+| **✕ Remove** | Delete this overlay | Preview updates instantly |
+| **Position grid (3×3)** | Pin the overlay to any of 9 positions | TL/TR/BL/BR for corners, Top/Bot/Left/Right for edges, Center for middle |
+| **📐 Size** | Scale the overlay (5%–80% of screen height) | 20–35% looks natural for character art |
+| **✨ Brightness** | Brighten or dim the overlay independently | Keep at 1.0× for crisp artwork |
+| **🌫️ Blur** | Blur the overlay | 0 for sharp, 2–5 for dreamy/ghosted effect |
+| **💧 Opacity** | How transparent the overlay is | 180–255 for solid, lower for ghosted |
+
+> 💡 **Pro tip:** Use a PNG with a transparent background for your overlays (like chibi character art) — the transparency is fully preserved so only the character appears, with no white/solid box around it!
+
+> 💡 **Overlay position is fixed** — unlike the background which can Zoom & Fill, overlays are always pinned to their chosen corner/edge regardless of how you resize the Explorer window. This is intentional — it keeps your chibi army exactly where you want them!
+
+> 💡 **No background needed** — you can use overlays without any background image! In that case, Explorer's own theme color (light/dark) shows through naturally.
+
+You can add as many overlays as you want. They all composite into one final image before being sent to Explorer.
+
+---
+
+### Step 7 — Point to the DLL
 
 Under **EXPLORERTOOL DLL**, click **Browse** and select `ExplorerBgTool.dll` from your folder.
 
@@ -167,7 +234,7 @@ Under **EXPLORERTOOL DLL**, click **Browse** and select `ExplorerBgTool.dll` fro
 
 ---
 
-### Step 7 — Apply!
+### Step 8 — Apply!
 
 1. Click **✅ Apply to Explorer**
    - A green message appears: *"Applied! Now restart Explorer."*
@@ -180,26 +247,60 @@ Open File Explorer and enjoy your background! 🎉
 
 ---
 
+## 🖥️ Desktop Wallpaper Sync
+
+Instead of picking a custom image, you can use your **current desktop wallpaper** as the Explorer background — and keep it in sync automatically!
+
+Click **🖥️ Wallpaper** in the Background Layer section. The app will:
+1. Copy your current desktop wallpaper (works with both custom wallpapers and Windows Spotlight)
+2. Apply it as your Explorer background
+3. Show a green **⟳ auto-sync** badge
+
+```
+🌄 BACKGROUND LAYER
+[ current_wallpaper.jpg ] [Browse] [🖥️ Wallpaper] [🗑 Clear]  ⟳ auto-sync
+```
+
+When auto-sync is on, the app checks every **30 minutes** for wallpaper changes. If your Spotlight wallpaper rotated, it automatically re-applies the new one to Explorer — silently, no popups.
+
+**To turn off auto-sync:** just click **Browse** and pick a custom image. The badge disappears and the watcher stops.
+
+| Wallpaper type | Button works? | Auto-sync works? |
+|---|---|---|
+| Custom image (static) | ✅ | ✅ stays fixed, watcher idles |
+| Windows Spotlight | ✅ | ✅ updates when Spotlight rotates |
+| Solid color desktop | ❌ no image to grab | — |
+
+---
+
 ## 🔁 Making it survive reboots (do this once)
 
 By default the background resets when you restart Windows. Run this once to fix that:
 
-**Prerequisites:** Complete Steps 2–7 above first so `bg_config.json` exists.
+**Prerequisites:** Complete Steps 2–8 above first so `bg_config.json` exists.
 
 1. Double-click **`SETUP_AUTOSTART.bat`**
 2. Click **Yes** on the admin prompt
-3. A green message confirms: **"Done! Background will now auto-apply on every login."**
+3. A green message confirms everything is registered
 
 To verify it worked:
 - Press `Win + R` → type `taskschd.msc` → hit Enter
-- Look for **ExplorerBgTool** in the Task Scheduler list
+- Look for both tasks in the Task Scheduler list:
 
 ```
 Task Scheduler Library
-└── ✅ ExplorerBgTool   ← if this is here, you're done!
+├── ✅ ExplorerBgTool      ← applies background on every login (always runs)
+└── ✅ ExplorerBgWatcher   ← wallpaper auto-sync watcher (exits if not in wallpaper mode)
 ```
 
 From now on your background applies silently every time you log into Windows — no CMD window, no browser, just instant background. Exactly like a wallpaper.
+
+**What each task does on login:**
+
+| Task | What it does | When it runs |
+|---|---|---|
+| **ExplorerBgTool** | Registers the DLL — instantly applies last saved background | Always, every login |
+| **ExplorerBgWatcher** | Checks if wallpaper changed, re-applies if yes | Only when wallpaper mode is ON, exits immediately otherwise |
 
 ---
 
@@ -254,6 +355,9 @@ If Explorer keeps crashing after a Windows Update broke the hook:
 | Background disappeared after Windows Update | Run `start.bat` → Apply → done |
 | Explorer crashes on open | Hold ESC while clicking Explorer → then Uninstall from app |
 | Image gets cut off at window edges | Switch to **Zoom & Fill** position in the app |
+| Overlay has white/black box around it | Use a PNG with transparent background for overlays |
+| 🖥️ Wallpaper button shows error | Solid color desktop has no image to grab — pick an image instead |
+| Wallpaper auto-sync not working after reboot | Run `SETUP_AUTOSTART.bat` again — makes sure watcher task is registered |
 
 ---
 
@@ -262,14 +366,17 @@ If Explorer keeps crashing after a Windows Update broke the hook:
 | File | Purpose | Safe to delete? |
 |---|---|---|
 | `explorer_bg_tool.py` | Main Python app | ❌ No |
+| `wallpaper_watcher.py` | Standalone wallpaper sync watcher | ❌ No |
 | `ExplorerBgTool.dll` | Explorer hook DLL | ❌ No |
 | `start.bat` | Launches control panel | ❌ No |
 | `SETUP_AUTOSTART.bat` | Sets up boot auto-start | ✅ After running once |
 | `setup_autostart.ps1` | Called by SETUP_AUTOSTART | ❌ Keep alongside the BAT |
 | `REMOVE_AUTOSTART.bat` | Removes boot auto-start | ✅ Optional to keep |
 | `bg_config.json` | Saved settings | ❌ No (holds your DLL path etc.) |
+| `config.ini` | explorerTool config | ❌ No (re-created on Apply) |
 | `launch_bg_silent.vbs` | Silent boot launcher | ❌ No (needed for auto-start) |
-| `image/bg_custom.png` | Processed background copy | ❌ No (re-created on Apply) |
+| `image/bg_custom.png` | Processed & composited background | ❌ No (re-created on Apply) |
+| `.wallpaper_cache/` | Desktop wallpaper cache folder | ✅ Safe, auto-recreated |
 
 ---
 
@@ -280,13 +387,16 @@ If Explorer keeps crashing after a Windows Update broke the hook:
 - You can keep multiple images and swap them anytime via the app
 - GIF and live wallpapers are **not supported** inside Explorer (Windows limitation)
 - If you move the folder to a new location, just run `start.bat`, click Browse DLL to repoint to the DLL, Apply, then run `SETUP_AUTOSTART.bat` again
+- **Overlays are composited at 4K resolution** before being sent to Explorer — they stay sharp even on large monitors
+- **Overlay position is absolute** — the chibi stays in its corner even when you resize Explorer. Background uses Zoom & Fill so it always scales. They work independently!
+- Check `.wallpaper_cache/watcher.log` if wallpaper auto-sync isn't behaving as expected — it logs every check and apply
 
 ---
 
 ## 🙏 Credits
 
 - **[Maplespe](https://github.com/Maplespe/explorerTool)** — for the original `ExplorerBgTool.dll` that makes all of this possible
-- Python GUI, browser UI, and tooling built on top of it
+- Python GUI, browser UI, foreground overlay system, wallpaper sync, and tooling built on top of it
 
 ---
 
