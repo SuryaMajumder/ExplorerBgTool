@@ -158,6 +158,7 @@ You have three options for the background:
 | **Browse** | Pick any image from your PC |
 | **🖥️ Wallpaper** | Use your current desktop wallpaper (auto-syncs if Spotlight!) |
 | **🗑 Clear** | Remove the background image (overlays remain untouched) |
+| **☑ Also apply to Windows file picker dialogs** | When checked, your background + overlays also appear in Save As / Open File dialogs system-wide |
 
 ---
 
@@ -252,6 +253,8 @@ Under **EXPLORERTOOL DLL**, click **Browse** and select `ExplorerBgTool.dll` fro
 Open File Explorer and enjoy your background! 🎉
 
 > 💡 Note background doesn't appear at Home and Gallery of File Explorer. You can browse to any other location and your background will appear.
+
+> 💡 Want your background in Windows file picker dialogs too (Save As, Open File, etc.)? Tick **☑ Also apply to Windows file picker dialogs** before clicking Apply!
 
 ---
 
