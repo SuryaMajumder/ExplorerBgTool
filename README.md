@@ -39,7 +39,7 @@ Built with Python + a browser-based UI. Works on **Windows 10 and Windows 11**.
 > ```
 > ☑  Add Python to PATH   ← tick this, it's unchecked by default!
 > ```
-> or one can simply use below command example in cmd admin mode to install any Python version 3.8+ **(this auto-ads Python to PATH)**
+> or one can simply use below command example in cmd admin mode to install any Python version 3.8+ **(this Auto-Adds Python to PATH)**
 > ```bash
 > winget install -e --id Python.Python.3.13
 > ```
