@@ -67,7 +67,7 @@ def wallpaper_watcher_loop(handler_cfg_ref, interval=1800):
                 image_dir = os.path.join(dll_dir, "image")
                 ini_path  = os.path.join(dll_dir, "config.ini")
                 save_final_image(handler_cfg_ref, image_dir)
-                write_ini(ini_path, 6, image_dir)
+                write_ini(ini_path, 6, image_dir, cfg_snap.get("folder_ext", False))
                 register_dll(dll)
                 print("[watcher] Auto-applied new wallpaper!")
             except Exception as e:
@@ -97,7 +97,8 @@ DEFAULT_CONFIG = {
     "image_path": "", "brightness": 1.0, "blur": 0,
     "opacity": 255,   "pos_type": 6,     "dll_path": "",
     "overlays": [],  # list of overlay dicts
-    "wallpaper_mode": False  # True = auto-sync with desktop wallpaper
+    "wallpaper_mode": False,  # True = auto-sync with desktop wallpaper
+    "folder_ext": False  # True = also apply to file picker dialogs
 }
 
 DEFAULT_OVERLAY = {
@@ -247,9 +248,9 @@ def save_final_image(cfg, image_dir):
     return out
 
 
-def write_ini(ini_path, pos_type, image_folder):
+def write_ini(ini_path, pos_type, image_folder, folder_ext=False):
     open(ini_path, "w").write(f"""[load]
-folderExt=false
+folderExt={str(folder_ext).lower()}
 noerror=false
 [image]
 random=false
@@ -441,6 +442,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
           <span id="wallpaperSyncBadge" style="display:none;font-size:10px;font-family:'DM Mono',monospace;color:var(--ok);border:1px solid var(--ok);border-radius:99px;padding:3px 8px;white-space:nowrap;">⟳ auto-sync</span>
         </div>
         <p class="hint">PNG, JPG, WEBP, BMP</p>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:12px;font-weight:600;color:var(--fg);">
+          <input type="checkbox" id="folderExt" onchange="schedulePreview()"
+            style="width:15px;height:15px;accent-color:var(--acc);cursor:pointer;">
+          Also apply to Windows file picker dialogs
+        </label>
         <hr>
         <div class="card-title">Background Adjustments</div>
         <div class="sl-row">
@@ -538,6 +544,7 @@ async function init() {
   setSlider('bgOpacity','bgOpacVal', cfg.opacity, v=>v);
   if (cfg.image_path) document.getElementById('bgPathLabel').textContent = fname(cfg.image_path);
   if (cfg.wallpaper_mode) document.getElementById('wallpaperSyncBadge').style.display = 'inline';
+  document.getElementById('folderExt').checked = cfg.folder_ext || false;
   if (cfg.dll_path)   document.getElementById('dllPathLabel').textContent = fname(cfg.dll_path);
   setBgPos(cfg.pos_type ?? 6);
   // restore overlays
@@ -592,12 +599,13 @@ async function doPreview() {
 
 function buildParams() {
   return {
-    image_path: cfg.image_path || '',   // always send current path explicitly
-    brightness: document.getElementById('bgBrightness').value / 100,
-    blur:       document.getElementById('bgBlur').value,
-    opacity:    document.getElementById('bgOpacity').value,
-    pos_type:   bgPos,
-    overlays:   JSON.stringify(overlays),
+    image_path:  cfg.image_path || '',
+    brightness:  document.getElementById('bgBrightness').value / 100,
+    blur:        document.getElementById('bgBlur').value,
+    opacity:     document.getElementById('bgOpacity').value,
+    pos_type:    bgPos,
+    overlays:    JSON.stringify(overlays),
+    folder_ext:  document.getElementById('folderExt').checked,
   };
 }
 
@@ -926,6 +934,7 @@ class Handler(BaseHTTPRequestHandler):
                 "opacity":    cfg_snap["opacity"],
                 "pos_type":   cfg_snap["pos_type"],
                 "overlays":   cfg_snap["overlays"],
+                "folder_ext": cfg_snap["folder_ext"],
                 "dll_path":   dll,
             })
             save_config(self.cfg)
@@ -935,7 +944,7 @@ class Handler(BaseHTTPRequestHandler):
                 image_dir = os.path.join(dll_dir, "image")
                 ini_path  = os.path.join(dll_dir, "config.ini")
                 save_final_image(cfg_snap, image_dir)
-                write_ini(ini_path, 6, image_dir)  # always Zoom&Fill for the composited image
+                write_ini(ini_path, 6, image_dir, cfg_snap.get("folder_ext", False))  # always Zoom&Fill for the composited image
                 ok = register_dll(dll)
                 if ok:
                     self.send_json({"ok": True,  "msg": "Applied! Now restart Explorer."})
@@ -974,7 +983,8 @@ class Handler(BaseHTTPRequestHandler):
             "blur":       int(params.get("blur", 0)),
             "opacity":    int(params.get("opacity", 255)),
             "pos_type":   int(params.get("pos_type", 6)),
-            "overlays":   overlays,
+            "overlays":    overlays,
+            "folder_ext":  params.get("folder_ext", False) in [True, "true", "True"],
         }
 
 
