@@ -22,6 +22,8 @@ Built with Python + a browser-based UI. Works on **Windows 10 and Windows 11**.
 │ 📁 Downloads    │                                       │
 └─────────────────┴───────────────────────────────────────┘
 ```
+![Explorer with custom background and chibi overlay](screenshots/explorer_preview.png)
+
 
 ---
 
@@ -131,6 +133,7 @@ The browser control panel looks like this:
 │  [ + Add Foreground Image ]                                              │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+![Browser control panel](screenshots/control_panel.png)
 
 ---
 
