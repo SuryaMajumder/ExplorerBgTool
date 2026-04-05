@@ -206,6 +206,7 @@ Click **`+ Add Foreground Image`** at the bottom of the page. Each overlay gets 
 │ 💧 Opacity     ──────────  255                         │
 └────────────────────────────────────────────────────────┘
 ```
+![Foreground Browser control panel](screenshots/foreground_control_panel.png)
 
 **What each overlay control does:**
 
