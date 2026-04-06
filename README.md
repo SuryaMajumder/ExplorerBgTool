@@ -124,8 +124,9 @@ The browser control panel looks like this:
 │  [ image.jpg ] [Browse][🖥️ Wallpaper] ├──────────────────────────────────┤
 │               [🗑 Clear]               │  ACTIONS                         │
 │  ✨ Brightness  ───●─────  1.0×       │  ✅  Apply to Explorer          │
-│  🌫️ Blur/Haze   ●─────────  0px       │  🔄  Restart Explorer           │
-│  💧 Opacity     ──────●──  255        │  ❌  Uninstall Background       │
+│  🎨 Contrast    ───●─────  1.0×       │  🔄  Restart Explorer           │
+│  🌫️ Blur/Haze   ●─────────  0px       │  ❌  Uninstall Background       │
+│  💧 Opacity     ──────●──  255        │                                 │
 ├───────────────────────────────────────┴──────────────────────────────────┤
 │  🎨 FOREGROUND OVERLAYS  (optional — add as many as you want)            │
 │  ┌─────────────────────────────────────────────────────────────────────┐ │
@@ -167,6 +168,7 @@ You have three options for the background:
 | Slider | What it does | Sweet spot |
 |---|---|---|
 | **✨ Brightness** | Makes the image lighter or darker | `0.4–0.7×` — dim it so folder icons stay readable |
+| **🎨 Contrast** | Increases or decreases image contrast | `0.8–1.3×` — subtle boost makes colors pop |
 | **🌫️ Blur / Haze** | Adds a frosted-glass dreamy haze | `3–8px` for a subtle glow effect |
 | **💧 Opacity** | How see-through the image is | `80–180` balances beauty and readability |
 
@@ -209,6 +211,13 @@ Click **`+ Add Foreground Image`** at the bottom of the page. Each overlay gets 
 │ ✨ Brightness  ──●──────  1.0×                         │
 │ 🌫️ Blur        ●────────   0px                         │
 │ 💧 Opacity     ──────────  255                         │
+│                                                        │
+│ ▸ ADVANCED  (click to expand)                          │
+│  ↔️ Left→Right  ──────●──  100%  (custom X position)   │
+│  ↕️ Top→Bottom  ──────●──  100%  (custom Y position)   │
+│  🎨 Contrast   ───●──────  1.0×                        │
+│  [↔ Flip H]  [↕ Flip V]                               │
+│  🔄 Rotation   ───●──────  0°                          │
 └────────────────────────────────────────────────────────┘
 ```
 ![Foreground Browser control panel](screenshots/foreground_control_panel.png)
@@ -224,10 +233,19 @@ Click **`+ Add Foreground Image`** at the bottom of the page. Each overlay gets 
 | **✨ Brightness** | Brighten or dim the overlay independently | Keep at 1.0× for crisp artwork |
 | **🌫️ Blur** | Blur the overlay | 0 for sharp, 2–5 for dreamy/ghosted effect |
 | **💧 Opacity** | How transparent the overlay is | 180–255 for solid, lower for ghosted |
+| **▸ ADVANCED** | Expand for fine-tuning controls | Click to toggle open/closed |
+| **↔️ Left→Right** | Custom X position (0%=left edge, 100%=right edge) | Overrides the 9-position grid for pixel-perfect placement |
+| **↕️ Top→Bottom** | Custom Y position (0%=top, 100%=bottom) | Use with Left→Right for full free positioning |
+| **🎨 Contrast** | Increase or decrease overlay contrast independently | 1.0× = no change |
+| **↔ Flip H** | Mirror the overlay horizontally | Toggle — highlighted when active |
+| **↕ Flip V** | Mirror the overlay vertically | Toggle — highlighted when active |
+| **🔄 Rotation** | Rotate the overlay 0°–359° | Applied after flipping |
 
 > 💡 **Pro tip:** Use a PNG with a transparent background for your overlays (like chibi character art) — the transparency is fully preserved so only the character appears, with no white/solid box around it!
 
 > 💡 **Overlay position is fixed** — unlike the background which can Zoom & Fill, overlays are always pinned to their chosen corner/edge regardless of how you resize the Explorer window. This is intentional — it keeps your chibi army exactly where you want them!
+
+> 💡 **Custom positioning** — the 9 position buttons are shortcuts. For pixel-perfect placement, open **▸ ADVANCED** and use the Left→Right / Top→Bottom sliders. Dragging these deactivates the 9 buttons (custom mode). Clicking any position button snaps the sliders back to that anchor and re-activates it.
 
 > 💡 **No background needed** — you can use overlays without any background image! In that case, Explorer's own theme color (light/dark) shows through naturally.
 
