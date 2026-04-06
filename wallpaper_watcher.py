@@ -151,8 +151,13 @@ def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
         ov_img    = ov_img.resize((target_w, target_h), Image.LANCZOS)
         pad_x, pad_y = ov.get("offset_x", 20), ov.get("offset_y", 20)
         cx, cy = (W - target_w) // 2, (H - target_h) // 2
-        pos = ov.get("position", "br")
-        if   pos == "tl": x, y = pad_x, pad_y
+        pos      = ov.get("position", "br")
+        custom_x = ov.get("custom_x", -1)
+        custom_y = ov.get("custom_y", -1)
+        if custom_x >= 0 and custom_y >= 0:
+            x = int(custom_x / 100 * (W - target_w))
+            y = int(custom_y / 100 * (H - target_h))
+        elif pos == "tl": x, y = pad_x, pad_y
         elif pos == "tm": x, y = cx, pad_y
         elif pos == "tr": x, y = W-target_w-pad_x, pad_y
         elif pos == "ml": x, y = pad_x, cy
@@ -177,15 +182,17 @@ def apply_to_explorer(cfg):
         os.makedirs(image_dir, exist_ok=True)
         img = composite_final(cfg)
         img.save(os.path.join(image_dir, "bg_custom.png"), "PNG")
-        # Write config.ini
+        # Write config.ini — read settings from saved config
+        folder_ext = str(cfg.get("folder_ext", False)).lower()
+        pos_type   = cfg.get("pos_type", 6)
         with open(ini_path, "w") as f:
             f.write(f"""[load]
-folderExt=false
+folderExt={folder_ext}
 noerror=false
 [image]
 random=false
 custom=false
-posType=6
+posType={pos_type}
 imgAlpha=255
 folder={image_dir}
 """)
