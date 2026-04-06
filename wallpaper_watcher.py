@@ -89,17 +89,24 @@ def get_desktop_wallpaper():
     return None
 
 # ── Image processing ──────────────────────────────────────────────────────────
-def process_layer(src, brightness, blur, opacity):
+def process_layer(src, brightness, blur, opacity, contrast=1.0,
+                  flip_h=False, flip_v=False, rotation=0):
     img = Image.open(src).convert("RGBA")
     r, g, b, a = img.split()
     rgb = Image.merge("RGB", (r, g, b))
     rgb = ImageEnhance.Brightness(rgb).enhance(brightness)
+    if contrast != 1.0:
+        rgb = ImageEnhance.Contrast(rgb).enhance(contrast)
     if blur > 0:
         rgb = rgb.filter(ImageFilter.GaussianBlur(radius=blur))
         a   = a.filter(ImageFilter.GaussianBlur(radius=blur * 0.5))
     a = a.point(lambda p: int(p * opacity / 255))
     r2, g2, b2 = rgb.split()
-    return Image.merge("RGBA", (r2, g2, b2, a))
+    result = Image.merge("RGBA", (r2, g2, b2, a))
+    if flip_h: result = result.transpose(Image.FLIP_LEFT_RIGHT)
+    if flip_v: result = result.transpose(Image.FLIP_TOP_BOTTOM)
+    if rotation != 0: result = result.rotate(-rotation, expand=True, resample=Image.BICUBIC)
+    return result
 
 def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
     W, H = canvas_size
@@ -111,7 +118,8 @@ def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
     bg_path = cfg.get("image_path", "")
     if bg_path and os.path.exists(bg_path):
         bg = process_layer(bg_path, cfg.get("brightness", 1.0),
-                           cfg.get("blur", 0), cfg.get("opacity", 255))
+                           cfg.get("blur", 0), cfg.get("opacity", 255),
+                           contrast=cfg.get("contrast", 1.0))
         pos = cfg.get("pos_type", 6)
         if pos == 6:
             ratio = max(W / bg.width, H / bg.height)
@@ -132,7 +140,11 @@ def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
         ov_path = ov.get("path", "")
         if not ov_path or not os.path.exists(ov_path): continue
         ov_img = process_layer(ov_path, ov.get("brightness", 1.0),
-                               ov.get("blur", 0), ov.get("opacity", 255))
+                               ov.get("blur", 0), ov.get("opacity", 255),
+                               contrast=ov.get("contrast", 1.0),
+                               flip_h=ov.get("flip_h", False),
+                               flip_v=ov.get("flip_v", False),
+                               rotation=ov.get("rotation", 0))
         scale_pct = ov.get("scale", 30) / 100.0
         target_h  = int(H * scale_pct)
         target_w  = int(ov_img.width * (target_h / ov_img.height))

@@ -95,7 +95,7 @@ def stop_watcher():
 
 DEFAULT_CONFIG = {
     "image_path": "", "brightness": 1.0, "blur": 0,
-    "opacity": 255,   "pos_type": 6,     "dll_path": "",
+    "contrast": 1.0,  "opacity": 255,    "pos_type": 6,  "dll_path": "",
     "overlays": [],  # list of overlay dicts
     "wallpaper_mode": False,  # True = auto-sync with desktop wallpaper
     "folder_ext": False  # True = also apply to file picker dialogs
@@ -107,10 +107,16 @@ DEFAULT_OVERLAY = {
     "position": "br",   # tl, tr, bl, br
     "scale": 30,        # % of canvas height
     "brightness": 1.0,
+    "contrast": 1.0,    # 0.5-2.0
     "blur": 0,
     "opacity": 255,
     "offset_x": 20,    # px padding from edge
     "offset_y": 20,
+    "custom_x": -1,    # -1 = use position anchor, 0-100 = % of canvas width
+    "custom_y": -1,    # -1 = use position anchor, 0-100 = % of canvas height
+    "flip_h": False,
+    "flip_v": False,
+    "rotation": 0,     # degrees 0-359
 }
 
 def load_config():
@@ -127,22 +133,33 @@ def save_config(cfg):
 
 # ── Image processing ──────────────────────────────────────────────────────────
 
-def process_layer(src, brightness, blur, opacity):
-    """Load and apply brightness/blur/opacity to an image. Returns RGBA."""
+def process_layer(src, brightness, blur, opacity, contrast=1.0,
+                  flip_h=False, flip_v=False, rotation=0):
+    """Load and apply all effects to an image. Returns RGBA."""
     img = Image.open(src).convert("RGBA")
     # Split alpha before any processing so we preserve transparency
     r, g, b, a = img.split()
     rgb = Image.merge("RGB", (r, g, b))
-    # Apply brightness only to RGB, not alpha
+    # Brightness
     rgb = ImageEnhance.Brightness(rgb).enhance(brightness)
+    # Contrast
+    if contrast != 1.0:
+        rgb = ImageEnhance.Contrast(rgb).enhance(contrast)
+    # Blur
     if blur > 0:
         rgb = rgb.filter(ImageFilter.GaussianBlur(radius=blur))
-        # Also blur alpha slightly for smooth edges
-        a = a.filter(ImageFilter.GaussianBlur(radius=blur * 0.5))
-    # Apply opacity to original alpha
+        a   = a.filter(ImageFilter.GaussianBlur(radius=blur * 0.5))
+    # Opacity
     a = a.point(lambda p: int(p * opacity / 255))
     r2, g2, b2 = rgb.split()
-    return Image.merge("RGBA", (r2, g2, b2, a))
+    result = Image.merge("RGBA", (r2, g2, b2, a))
+    # Flip
+    if flip_h: result = result.transpose(Image.FLIP_LEFT_RIGHT)
+    if flip_v: result = result.transpose(Image.FLIP_TOP_BOTTOM)
+    # Rotation (expand=True keeps full image, no cropping)
+    if rotation != 0:
+        result = result.rotate(-rotation, expand=True, resample=Image.BICUBIC)
+    return result
 
 
 def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
@@ -165,6 +182,7 @@ def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
             cfg.get("brightness", 1.0),
             cfg.get("blur", 0),
             cfg.get("opacity", 255),
+            contrast = cfg.get("contrast", 1.0),
         )
         pos = cfg.get("pos_type", 6)
 
@@ -197,30 +215,42 @@ def composite_final(cfg, canvas_size=(CANVAS_W, CANVAS_H)):
             ov.get("brightness", 1.0),
             ov.get("blur", 0),
             ov.get("opacity", 255),
+            contrast = ov.get("contrast", 1.0),
+            flip_h   = ov.get("flip_h", False),
+            flip_v   = ov.get("flip_v", False),
+            rotation = ov.get("rotation", 0),
         )
 
         # Scale based on % of canvas height
         scale_pct = ov.get("scale", 30) / 100.0
         target_h  = int(H * scale_pct)
-        ratio     = target_h / ov_img.height
+        ratio     = target_h / ov_img.height if ov_img.height else 1
         target_w  = int(ov_img.width * ratio)
         ov_img    = ov_img.resize((target_w, target_h), Image.LANCZOS)
 
-        pad_x = ov.get("offset_x", 20)
-        pad_y = ov.get("offset_y", 20)
-        pos   = ov.get("position", "br")
+        pad_x     = ov.get("offset_x", 20)
+        pad_y     = ov.get("offset_y", 20)
+        pos       = ov.get("position", "br")
+        custom_x  = ov.get("custom_x", -1)
+        custom_y  = ov.get("custom_y", -1)
 
         cx = (W - target_w) // 2
         cy = (H - target_h) // 2
-        if   pos == "tl": x, y = pad_x,                pad_y
-        elif pos == "tm": x, y = cx,                    pad_y
-        elif pos == "tr": x, y = W-target_w-pad_x,     pad_y
-        elif pos == "ml": x, y = pad_x,                cy
-        elif pos == "cc": x, y = cx,                    cy
-        elif pos == "mr": x, y = W-target_w-pad_x,     cy
-        elif pos == "bl": x, y = pad_x,                H-target_h-pad_y
-        elif pos == "bm": x, y = cx,                    H-target_h-pad_y
-        else:             x, y = W-target_w-pad_x,     H-target_h-pad_y  # br
+
+        # Custom X/Y position (0-100% of canvas) overrides anchor if set
+        if custom_x >= 0 and custom_y >= 0:
+            x = int(custom_x / 100 * (W - target_w))
+            y = int(custom_y / 100 * (H - target_h))
+        else:
+            if   pos == "tl": x, y = pad_x,                pad_y
+            elif pos == "tm": x, y = cx,                    pad_y
+            elif pos == "tr": x, y = W-target_w-pad_x,     pad_y
+            elif pos == "ml": x, y = pad_x,                cy
+            elif pos == "cc": x, y = cx,                    cy
+            elif pos == "mr": x, y = W-target_w-pad_x,     cy
+            elif pos == "bl": x, y = pad_x,                H-target_h-pad_y
+            elif pos == "bm": x, y = cx,                    H-target_h-pad_y
+            else:             x, y = W-target_w-pad_x,     H-target_h-pad_y  # br
 
         canvas.paste(ov_img, (x, y), ov_img)
 
@@ -397,6 +427,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .ov-pos-btn.active{border-color:var(--acc);background:rgba(180,142,247,.12);color:var(--acc);}
 
 hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.adv-toggle{width:100%;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;padding:6px;cursor:pointer;text-align:center;letter-spacing:1px;transition:all .2s;margin-top:10px;}
+.adv-toggle:hover{border-color:var(--acc);color:var(--acc);}
+.adv-body{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.adv-body.open{display:block;}
+.flip-row{display:flex;gap:8px;margin-bottom:14px;}
+.flip-btn{flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:#0d0d18;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;}
+.flip-btn:hover{border-color:var(--acc);color:var(--acc);}
+.flip-btn.active{border-color:var(--acc);background:rgba(180,142,247,.12);color:var(--acc);}
 .hint{font-size:11px;color:var(--muted);line-height:1.6;margin-top:5px;}
 
 /* Toast */
@@ -452,6 +490,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
         <div class="sl-row">
           <div class="sl-hdr"><span class="sl-lbl">✨ Brightness</span><span class="sl-val" id="bgBrightVal">1.0×</span></div>
           <input type="range" id="bgBrightness" min="10" max="200" value="100" oninput="updSlider('bgBrightness','bgBrightVal',v=>(v/100).toFixed(1)+'×');schedulePreview()">
+        </div>
+        <div class="sl-row">
+          <div class="sl-hdr"><span class="sl-lbl">🎨 Contrast</span><span class="sl-val" id="bgContrastVal">1.0×</span></div>
+          <input type="range" id="bgContrast" min="10" max="200" value="100" oninput="updSlider('bgContrast','bgContrastVal',v=>(v/100).toFixed(1)+'×');schedulePreview()">
         </div>
         <div class="sl-row">
           <div class="sl-hdr"><span class="sl-lbl">🌫️ Blur / Haze</span><span class="sl-val" id="bgBlurVal">0px</span></div>
@@ -540,6 +582,7 @@ async function init() {
   b.className = 'badge ' + (cfg.is_admin ? 'ok' : 'err');
   // restore bg
   setSlider('bgBrightness','bgBrightVal', Math.round(cfg.brightness*100), v=>(v/100).toFixed(1)+'×');
+  setSlider('bgContrast','bgContrastVal', Math.round((cfg.contrast||1.0)*100), v=>(v/100).toFixed(1)+'×');
   setSlider('bgBlur','bgBlurVal', cfg.blur, v=>v+'px');
   setSlider('bgOpacity','bgOpacVal', cfg.opacity, v=>v);
   if (cfg.image_path) document.getElementById('bgPathLabel').textContent = fname(cfg.image_path);
@@ -601,6 +644,7 @@ function buildParams() {
   return {
     image_path:  cfg.image_path || '',
     brightness:  document.getElementById('bgBrightness').value / 100,
+    contrast:    document.getElementById('bgContrast').value / 100,
     blur:        document.getElementById('bgBlur').value,
     opacity:     document.getElementById('bgOpacity').value,
     pos_type:    bgPos,
@@ -683,6 +727,16 @@ function renderOverlay(ov) {
     {k:'bl',v:'↙ BL'}, {k:'bm',v:'↓ Bot'}, {k:'br',v:'↘ BR'},
   ];
 
+  // Compute initial XY slider values from position anchor
+  const posToXY = {
+    tl:[0,0], tm:[50,0], tr:[100,0],
+    ml:[0,50], cc:[50,50], mr:[100,50],
+    bl:[0,100], bm:[50,100], br:[100,100]
+  };
+  const initXY = (ov.custom_x >= 0 && ov.custom_y >= 0)
+    ? [ov.custom_x, ov.custom_y]
+    : (posToXY[ov.position] || [100,100]);
+
   div.innerHTML = `
     <div class="ov-header">
       <span class="ov-title">🎨 Overlay ${overlays.indexOf(ov)+1}</span>
@@ -694,7 +748,7 @@ function renderOverlay(ov) {
     <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Position</div>
     <div class="ov-pos-grid" id="ovPosGrid_${ov.id}" style="grid-template-columns:repeat(3,1fr);">
       ${posLabels.map(({k,v})=>`
-        <button class="ov-pos-btn ${ov.position===k?'active':''}" onclick="setOvPos('${ov.id}','${k}')">${v}</button>
+        <button class="ov-pos-btn ${ov.position===k && (ov.custom_x<0||ov.custom_y<0) ?'active':''}" onclick="setOvPos('${ov.id}','${k}')">${v}</button>
       `).join('')}
     </div>
 
@@ -722,8 +776,74 @@ function renderOverlay(ov) {
         oninput="updOvSlider('${ov.id}','opacity','ovOpac','ovOpacVal',v=>v)"
         onchange="schedulePreview()">
     </div>
+
+    <!-- ── Advanced Section ──────────────────────────────────────── -->
+    <button class="adv-toggle" onclick="toggleAdv('${ov.id}')">▸ ADVANCED</button>
+    <div class="adv-body" id="advBody_${ov.id}">
+
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Custom Position</div>
+      <div class="sl-row">
+        <div class="sl-hdr"><span class="sl-lbl">↔️ Left → Right</span><span class="sl-val" id="ovXVal_${ov.id}">${initXY[0]}%</span></div>
+        <input type="range" id="ovX_${ov.id}" min="0" max="100" value="${initXY[0]}"
+          oninput="updOvXY('${ov.id}')"
+          onchange="schedulePreview()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hdr"><span class="sl-lbl">↕️ Top → Bottom</span><span class="sl-val" id="ovYVal_${ov.id}">${initXY[1]}%</span></div>
+        <input type="range" id="ovY_${ov.id}" min="0" max="100" value="${initXY[1]}"
+          oninput="updOvXY('${ov.id}')"
+          onchange="schedulePreview()">
+      </div>
+
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:4px;">Effects</div>
+      <div class="sl-row">
+        <div class="sl-hdr"><span class="sl-lbl">🎨 Contrast</span><span class="sl-val" id="ovContrastVal_${ov.id}">${(ov.contrast||1.0).toFixed(1)}×</span></div>
+        <input type="range" id="ovContrast_${ov.id}" min="10" max="200" value="${Math.round((ov.contrast||1.0)*100)}"
+          oninput="updOvSlider('${ov.id}','contrast','ovContrast','ovContrastVal',v=>(v/100).toFixed(1)+'×',v=>v/100)"
+          onchange="schedulePreview()">
+      </div>
+
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:4px;">Transform</div>
+      <div class="flip-row">
+        <button class="flip-btn ${ov.flip_h?'active':''}" id="flipH_${ov.id}" onclick="toggleFlip('${ov.id}','flip_h','flipH_${ov.id}')">↔ Flip H</button>
+        <button class="flip-btn ${ov.flip_v?'active':''}" id="flipV_${ov.id}" onclick="toggleFlip('${ov.id}','flip_v','flipV_${ov.id}')">↕ Flip V</button>
+      </div>
+      <div class="sl-row">
+        <div class="sl-hdr"><span class="sl-lbl">🔄 Rotation</span><span class="sl-val" id="ovRotVal_${ov.id}">${ov.rotation||0}°</span></div>
+        <input type="range" id="ovRot_${ov.id}" min="0" max="359" value="${ov.rotation||0}"
+          oninput="updOvSlider('${ov.id}','rotation','ovRot','ovRotVal',v=>v+'°')"
+          onchange="schedulePreview()">
+      </div>
+
+    </div>
   `;
   list.appendChild(div);
+}
+
+function toggleAdv(id) {
+  const body = document.getElementById('advBody_' + id);
+  const btn  = body.previousElementSibling;
+  body.classList.toggle('open');
+  btn.textContent = body.classList.contains('open') ? '▾ ADVANCED' : '▸ ADVANCED';
+}
+
+function updOvXY(id) {
+  const x = parseFloat(document.getElementById('ovX_' + id).value);
+  const y = parseFloat(document.getElementById('ovY_' + id).value);
+  document.getElementById('ovXVal_' + id).textContent = x + '%';
+  document.getElementById('ovYVal_' + id).textContent = y + '%';
+  const ov = overlays.find(o => o.id === id);
+  if (ov) { ov.custom_x = x; ov.custom_y = y; ov.position = 'custom'; }
+  // Deactivate all 9 position buttons
+  document.querySelectorAll('#ovPosGrid_' + id + ' .ov-pos-btn').forEach(b => b.classList.remove('active'));
+}
+
+function toggleFlip(id, field, btnId) {
+  const ov = overlays.find(o => o.id === id);
+  if (!ov) return;
+  ov[field] = !ov[field];
+  document.getElementById(btnId).classList.toggle('active', ov[field]);
+  schedulePreview();
 }
 
 function updOvSlider(id, field, sliderPrefix, valPrefix, fmt, transform) {
@@ -735,11 +855,18 @@ function updOvSlider(id, field, sliderPrefix, valPrefix, fmt, transform) {
 
 function setOvPos(id, pos) {
   const ov = overlays.find(o => o.id === id);
-  if (ov) ov.position = pos;
+  if (ov) { ov.position = pos; ov.custom_x = -1; ov.custom_y = -1; }
   const keyMap = {tl:'TL',tm:'Top',tr:'TR',ml:'Left',cc:'Center',mr:'Right',bl:'BL',bm:'Bot',br:'BR'};
   document.querySelectorAll(`#ovPosGrid_${id} .ov-pos-btn`).forEach(b => {
     b.classList.toggle('active', b.textContent.includes(keyMap[pos]));
   });
+  // Snap X/Y sliders to match chosen position
+  const posToXY = {tl:[0,0],tm:[50,0],tr:[100,0],ml:[0,50],cc:[50,50],mr:[100,50],bl:[0,100],bm:[50,100],br:[100,100]};
+  const xy = posToXY[pos] || [100,100];
+  const xEl = document.getElementById('ovX_'+id);
+  const yEl = document.getElementById('ovY_'+id);
+  if (xEl) { xEl.value = xy[0]; document.getElementById('ovXVal_'+id).textContent = xy[0]+'%'; }
+  if (yEl) { yEl.value = xy[1]; document.getElementById('ovYVal_'+id).textContent = xy[1]+'%'; }
   schedulePreview();
 }
 
@@ -863,6 +990,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg_snap = {
                     "image_path": img_path,
                     "brightness": float(params.get("brightness", 1.0)),
+                    "contrast":   float(params.get("contrast", 1.0)),
                     "blur":       int(params.get("blur", 0)),
                     "opacity":    int(params.get("opacity", 255)),
                     "pos_type":   int(params.get("pos_type", 6)),
@@ -930,6 +1058,7 @@ class Handler(BaseHTTPRequestHandler):
             self.cfg.update({
                 "image_path": cfg_snap["image_path"],
                 "brightness": cfg_snap["brightness"],
+                "contrast":   cfg_snap["contrast"],
                 "blur":       cfg_snap["blur"],
                 "opacity":    cfg_snap["opacity"],
                 "pos_type":   cfg_snap["pos_type"],
@@ -980,6 +1109,7 @@ class Handler(BaseHTTPRequestHandler):
             # Use path sent directly from browser (most up to date), fallback to saved config
             "image_path": params.get("image_path", self.cfg.get("image_path", "")),
             "brightness": float(params.get("brightness", 1.0)),
+            "contrast":   float(params.get("contrast", 1.0)),
             "blur":       int(params.get("blur", 0)),
             "opacity":    int(params.get("opacity", 255)),
             "pos_type":   int(params.get("pos_type", 6)),
