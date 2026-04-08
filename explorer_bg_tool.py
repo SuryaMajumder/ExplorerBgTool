@@ -30,7 +30,7 @@ def get_transcoded_mtime():
         return None
 
 
-def wallpaper_watcher_loop(handler_cfg_ref, interval=1800):
+def wallpaper_watcher_loop(handler_cfg_ref, interval=10):
     global _last_wallpaper_mtime
     print("[watcher] Wallpaper watcher started (interval: 30min)")
     while not _watcher_stop.is_set():
@@ -67,7 +67,7 @@ def wallpaper_watcher_loop(handler_cfg_ref, interval=1800):
                 image_dir = os.path.join(dll_dir, "image")
                 ini_path  = os.path.join(dll_dir, "config.ini")
                 save_final_image(handler_cfg_ref, image_dir)
-                write_ini(ini_path, 6, image_dir, cfg_snap.get("folder_ext", False))
+                write_ini(ini_path, 6, image_dir, handler_cfg_ref.get("folder_ext", False))
                 register_dll(dll)
                 print("[watcher] Auto-applied new wallpaper!")
             except Exception as e:
