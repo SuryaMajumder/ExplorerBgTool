@@ -62,9 +62,14 @@ if (Test-Path $watcherScript) {
     }
     if (!$pythonw) {
         $locations = @(
+            "$env:LOCALAPPDATA\Programs\Python\Python314\pythonw.exe",
+            "$env:LOCALAPPDATA\Programs\Python\Python313\pythonw.exe",
             "$env:LOCALAPPDATA\Programs\Python\Python311\pythonw.exe",
             "$env:LOCALAPPDATA\Programs\Python\Python310\pythonw.exe",
             "$env:LOCALAPPDATA\Programs\Python\Python312\pythonw.exe",
+            "C:\Python314\pythonw.exe",
+            "C:\Python313\pythonw.exe",
+            "C:\Python312\pythonw.exe",
             "C:\Python311\pythonw.exe",
             "C:\Python310\pythonw.exe"
         )
